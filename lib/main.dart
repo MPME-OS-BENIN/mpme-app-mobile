@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+/* import 'package:flutter/material.dart';
 
 void main() {
   runApp(const MyApp());
@@ -117,6 +117,28 @@ class _MyHomePageState extends State<MyHomePage> {
         tooltip: 'Increment',
         child: const Icon(Icons.add),
       ),
+    );
+  }
+} */
+
+import 'package:flutter/material.dart';
+import 'presentation/navigation/app_routes.dart';
+import 'presentation/navigation/home_screen.dart';
+
+void main() {
+  runApp(const MpmeApp());
+}
+
+class MpmeApp extends StatelessWidget {
+  const MpmeApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'MPME OS',
+      theme: ThemeData(primarySwatch: Colors.green),
+      home: const HomeScreen(),
+      routes: AppRoutes.routes,
     );
   }
 }
