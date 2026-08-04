@@ -122,8 +122,9 @@ class _MyHomePageState extends State<MyHomePage> {
 } */
 
 import 'package:flutter/material.dart';
+import 'package:mpme_app_mobile/presentation/screens/auth/inscription.dart';
+import 'package:mpme_app_mobile/presentation/screens/auth/onboarding.dart';
 import 'presentation/navigation/app_routes.dart';
-import 'presentation/navigation/home_screen.dart';
 
 void main() {
   runApp(const MpmeApp());
@@ -137,8 +138,11 @@ class MpmeApp extends StatelessWidget {
     return MaterialApp(
       title: 'MPME OS',
       theme: ThemeData(primarySwatch: Colors.green),
-      home: const HomeScreen(),
+      debugShowCheckedModeBanner: false,
+      home: const Onboarding(),
       routes: AppRoutes.routes,
+      
+
     );
   }
 }
