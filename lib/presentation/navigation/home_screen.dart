@@ -17,7 +17,7 @@ class HomeScreen extends StatelessWidget {
               child: const Text('Connexion'),
             ),
             ElevatedButton(
-              onPressed: () => Navigator.pushNamed(context, AppRoutes.comptabilite),
+              onPressed: () => Navigator.pushNamed(context, AppRoutes.dashboard),
               child: const Text('Comptabilité'),
             ),
             ElevatedButton(

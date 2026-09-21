@@ -19,8 +19,9 @@ class DatabaseService {
 
     return await openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: _createTables,
+      onUpgrade: _onUpgrade,
     );
   }
 
@@ -29,15 +30,22 @@ class DatabaseService {
     await db.execute('''
       CREATE TABLE transactions (
         id TEXT PRIMARY KEY,
+        entrepriseId TEXT NOT NULL,
         type TEXT NOT NULL,
         montant REAL NOT NULL,
         description TEXT,
         categorieDepense TEXT,
         date TEXT NOT NULL,
         statutSynchronisation TEXT NOT NULL,
-        hashVerification TEXT NOT NULL
+        hashVerification TEXT
       )
     ''');
+  }
+
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await db.execute("ALTER TABLE transactions ADD COLUMN entrepriseId TEXT NOT NULL DEFAULT ''");
+    }
   }
 
   // Insérer une nouvelle transaction
@@ -50,10 +58,13 @@ class DatabaseService {
     );
   }
 
-  // Lire toutes les transactions
+  // Lire toutes les transactions (les plus récentes en premier)
   Future<List<TransactionModel>> getAllTransactions() async {
     final db = await database;
-    final List<Map<String, dynamic>> maps = await db.query('transactions');
+    final List<Map<String, dynamic>> maps = await db.query(
+      'transactions',
+      orderBy: 'date DESC',
+    );
     return maps.map((map) => TransactionModel.fromMap(map)).toList();
   }
 
@@ -63,19 +74,31 @@ class DatabaseService {
     final List<Map<String, dynamic>> maps = await db.query(
       'transactions',
       where: 'statutSynchronisation = ?',
-      whereArgs: ['LOCAL'],
+      whereArgs: [StatutSync.local],
     );
     return maps.map((map) => TransactionModel.fromMap(map)).toList();
   }
 
   // Marquer une transaction comme synchronisée
-  Future<void> markAsSynchronised(String id) async {
+  Future<void> markAsSynchronised(String id, {String? hash}) async {
     final db = await database;
     await db.update(
       'transactions',
-      {'statutSynchronisation': 'SYNCHRONISE'},
+      {
+        'statutSynchronisation': StatutSync.synchronise,
+        if (hash != null) 'hashVerification': hash,
+      },
       where: 'id = ?',
       whereArgs: [id],
     );
+  }
+
+  Future<void> replaceAll(List<TransactionModel> transactions) async {
+    final db = await database;
+    final batch = db.batch();
+    for (final t in transactions) {
+      batch.insert('transactions', t.toMap(), conflictAlgorithm: ConflictAlgorithm.replace);
+    }
+    await batch.commit(noResult: true);
   }
 }
