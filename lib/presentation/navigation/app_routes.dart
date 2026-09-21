@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../screens/auth/code_otp.dart';
+import '../screens/auth/inscription.dart';
 import '../screens/auth/login_screen.dart';
 import '../screens/comptabilite/comptabilite_screen.dart';
 import '../screens/dashboard/dashboard_screen.dart';
@@ -19,6 +21,8 @@ class AppRoutes {
   static const String financement = '/financement';
   static const String formalisation = '/formalisation';
   static const String score = '/score';
+  static const String codeOTP = '/codeOTP';
+  static const String inscription = '/inscription';
 
   static Map<String, WidgetBuilder> routes = {
     login: (context) => const LoginScreen(),
@@ -30,5 +34,7 @@ class AppRoutes {
     financement: (context) => const FinancementScreen(),
     formalisation: (context) => const FormalisationScreen(),
     score: (context) => const ScoreScreen(),
+    codeOTP: (context) => const CodeOTP(),
+    inscription: (context) => const Inscription(),
   };
 }
