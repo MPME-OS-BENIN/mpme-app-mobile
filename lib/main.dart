@@ -5,7 +5,7 @@ import 'data/providers/auth_provider.dart';
 import 'data/providers/entreprise_provider.dart';
 import 'data/providers/transaction_provider.dart';
 import 'presentation/navigation/app_routes.dart';
-import 'presentation/screens/auth/onboarding.dart';
+import 'presentation/screens/auth/auth_gate.dart';
 
 void main() {
   runApp(const MpmeApp());
@@ -26,7 +26,7 @@ class MpmeApp extends StatelessWidget {
         title: 'MPME OS',
         theme: AppTheme.light,
         debugShowCheckedModeBanner: false,
-        home: const Onboarding(),
+        home: const AuthGate(),
         routes: AppRoutes.routes,
       ),
     );

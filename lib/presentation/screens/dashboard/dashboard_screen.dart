@@ -24,6 +24,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   Future<void> _charger() async {
     await context.read<EntrepriseProvider>().charger();
+    if (!mounted) return;
     await context.read<TransactionProvider>().charger();
   }
 

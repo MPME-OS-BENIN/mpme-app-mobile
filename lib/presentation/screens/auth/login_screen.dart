@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:mpme_app_mobile/core/theme/app_colors.dart';
-import 'package:flutter/services.dart';
+import 'package:mpme_app_mobile/core/widgets/app_password_field.dart';
+import 'package:mpme_app_mobile/core/widgets/app_phone_field.dart';
+import 'package:mpme_app_mobile/core/widgets/error_banner.dart';
+import 'package:mpme_app_mobile/data/providers/auth_provider.dart';
 import 'package:mpme_app_mobile/presentation/navigation/app_routes.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -12,6 +16,33 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _telephoneController = TextEditingController();
+  final _motDePasseController = TextEditingController();
+
+  @override
+  void dispose() {
+    _telephoneController.dispose();
+    _motDePasseController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _seConnecter() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    final auth = context.read<AuthProvider>();
+    final succes = await auth.login(
+      telephoneComplet(_telephoneController.text),
+      _motDePasseController.text,
+    );
+
+    if (!mounted) return;
+    if (succes) {
+      Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
+    }
+    // En cas d'échec, AuthProvider.erreur est déjà renseigné et affiché
+    // via le Consumer plus bas (message backend traduit en français par
+    // ApiException, jamais de stack trace).
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -21,24 +52,17 @@ class _LoginScreenState extends State<LoginScreen> {
         backgroundColor: AppColors.tertiaryBg,
         title: Text(
           'MPME OS',
-          style: TextStyle(color: AppColors.primaryAlt,
-          fontWeight: FontWeight.bold),
+          style: TextStyle(color: AppColors.primaryAlt, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
         leading: Padding(
           padding: const EdgeInsets.all(8.0),
-          child: Icon(
-            Icons.question_mark,
-            color: AppColors.primaryAlt,
-          ),
+          child: Icon(Icons.question_mark, color: AppColors.primaryAlt),
         ),
         actions: [
           Padding(
             padding: const EdgeInsets.all(8.0),
-            child: Icon(
-              Icons.volume_up,
-              color: AppColors.primaryAlt,
-            ),
+            child: Icon(Icons.volume_up, color: AppColors.primaryAlt),
           ),
         ],
       ),
@@ -60,19 +84,12 @@ class _LoginScreenState extends State<LoginScreen> {
                         Color(0xFFFFF2E6),
                         Color(0xFFFFEFE0),
                       ],
-                      stops: [
-                        0.0,
-                        0.60,
-                        1.0,
-                      ],
+                      stops: [0.0, 0.60, 1.0],
                     ),
                   ),
                   child: LayoutBuilder(
                     builder: (context, constraints) {
-                      final imageWidth = constraints.maxWidth > 454
-                          ? 430.0
-                          : constraints.maxWidth - 24;
-
+                      final imageWidth = constraints.maxWidth > 454 ? 430.0 : constraints.maxWidth - 24;
                       return Align(
                         alignment: Alignment.topCenter,
                         child: Padding(
@@ -95,101 +112,110 @@ class _LoginScreenState extends State<LoginScreen> {
                   constraints: const BoxConstraints(maxWidth: 420),
                   child: Container(
                     width: double.infinity,
-                    height: 360,
                     decoration: BoxDecoration(
                       borderRadius: const BorderRadius.all(Radius.circular(24)),
                       color: AppColors.white,
                     ),
-                    
                     child: Form(
                       key: _formKey,
                       child: Padding(
                         padding: const EdgeInsets.all(18.0),
-                        child:  Column(
+                        child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            SizedBox(height: 20,),
-                            Text('Connexion',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 20,
-                              
-                            ),),
-                            Text('Entrez votre numero pour\n commencer'),
-                            SizedBox(height: 30,),
-                            Text('Numero de téléphone', 
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),),
-                            SizedBox(height: 8,),
-                            TextFormField(
-                              keyboardType: TextInputType.phone,
-                              inputFormatters: [
-                                FilteringTextInputFormatter.digitsOnly,
-                                LengthLimitingTextInputFormatter(10),
-                              ],
-                              decoration: InputDecoration(
-                                border: OutlineInputBorder(
-                                  borderRadius: BorderRadius.all(Radius.circular(8)),
-                                  
-                                ),
-                                enabledBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.all(Radius.circular(8)),
-                                  borderSide: BorderSide(color: Color(0xFFBDCABE),
-                                  width: 2.0
-                                  ),
-                                  
-                                ),
-                                focusedBorder: OutlineInputBorder(
-                                  borderRadius: BorderRadius.all(Radius.circular(8)),
-                                  borderSide: BorderSide(color: Color(0xFFBDCABE),
-                                  width: 2.0
-                                  ),
-                                  
-                                ),
-                                prefixText: '+229 ',
-                                hintText: '0190045678',
-                              ),
+                            const SizedBox(height: 20),
+                            const Text(
+                              'Connexion',
+                              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
                             ),
-                            SizedBox(height: 10,),
-                            Opacity(opacity: 0.8,
-                            child:Text('Un code OTP vous sera envoye par sms',
-                            style:TextStyle(fontStyle: FontStyle.italic,
-                            color: AppColors.black),
+                            const Text('Entrez votre numéro et votre mot de passe.'),
+                            const SizedBox(height: 30),
+                            const Text(
+                              'Numéro de téléphone',
+                              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                             ),
+                            const SizedBox(height: 8),
+                            AppPhoneField(
+                              controller: _telephoneController,
+                              textInputAction: TextInputAction.next,
                             ),
-                            SizedBox(height: 30,),
-                            ElevatedButton(
-                              onPressed: (){
-                                Navigator.pushReplacementNamed(context, AppRoutes.codeOTP);
-
+                            const SizedBox(height: 20),
+                            AppPasswordField(
+                              controller: _motDePasseController,
+                              textInputAction: TextInputAction.done,
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Entrez votre mot de passe';
+                                }
+                                return null;
                               },
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.primaryAlt,
-                                padding: EdgeInsets.symmetric(vertical: 20),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(15),
+                            ),
+                            const SizedBox(height: 12),
+                            Opacity(
+                              opacity: 0.8,
+                              child: Text(
+                                'Utilisez le mot de passe créé lors de votre inscription.',
+                                style: TextStyle(fontStyle: FontStyle.italic, color: AppColors.black),
+                              ),
+                            ),
+                            const SizedBox(height: 20),
+                            Consumer<AuthProvider>(
+                              builder: (context, auth, _) {
+                                return Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    SizedBox(
+                                      width: double.infinity,
+                                      child: ElevatedButton(
+                                        onPressed: auth.isLoading ? null : _seConnecter,
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: AppColors.primaryAlt,
+                                          padding: const EdgeInsets.symmetric(vertical: 20),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(15),
+                                          ),
+                                        ),
+                                        child: auth.isLoading
+                                            ? const SizedBox(
+                                                height: 20,
+                                                width: 20,
+                                                child: CircularProgressIndicator(
+                                                  color: Colors.white,
+                                                  strokeWidth: 2,
+                                                ),
+                                              )
+                                            : Row(
+                                                mainAxisAlignment: MainAxisAlignment.center,
+                                                children: [
+                                                  Text(
+                                                    'Se connecter',
+                                                    style: TextStyle(color: AppColors.white, fontSize: 16),
+                                                  ),
+                                                  const SizedBox(width: 8),
+                                                  Icon(Icons.arrow_forward, color: AppColors.white, size: 20),
+                                                ],
+                                              ),
+                                      ),
+                                    ),
+                                    if (auth.erreur != null) ErrorBanner(message: auth.erreur!),
+                                  ],
+                                );
+                              },
+                            ),
+                            const SizedBox(height: 16),
+                            Center(
+                              child: TextButton(
+                                onPressed: () =>
+                                    Navigator.pushReplacementNamed(context, AppRoutes.inscription),
+                                child: Text(
+                                  'Nouveau sur MPME OS ? Créer un compte',
+                                  style: TextStyle(
+                                    color: AppColors.primaryAlt,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ),
-                              child:Row(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text('Recevoir le code',
-                                  style: TextStyle(
-                                    color: AppColors.white,
-                                    fontSize: 16,
-                                  ),
-                                  ),
-                                  SizedBox(width: 8),
-                                  Icon(Icons.arrow_forward,
-                                  color: AppColors.white,
-                                  size: 20,
-                            
-                                  ),
-                                ],
-                              )
-
                             ),
-                            
-                            
                           ],
                         ),
                       ),
@@ -197,7 +223,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
               ),
-              SizedBox(height: 24),
+              const SizedBox(height: 24),
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: ConstrainedBox(
@@ -205,39 +231,27 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: Container(
                     width: double.infinity,
                     decoration: BoxDecoration(
-                      color: Color(0xFFFFDDC6),
-                      border: Border.all(color: Color(0xFFFF8E31), width: 1),
+                      color: const Color(0xFFFFDDC6),
+                      border: Border.all(color: const Color(0xFFFF8E31), width: 1),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    padding: EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(12),
                     child: Row(
                       children: [
                         CircleAvatar(
                           radius: 25,
-                          backgroundColor: Color(0xFF954A00),
-                          child: Icon(
-                            Icons.record_voice_over,
-                            color: AppColors.white,
-                            size: 20,
-                          ),
+                          backgroundColor: const Color(0xFF954A00),
+                          child: Icon(Icons.record_voice_over, color: AppColors.white, size: 20),
                         ),
-                        SizedBox(width: 12),
-                        Expanded(
+                        const SizedBox(width: 12),
+                        const Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Text(
-                                'Besoin d\'aide ?',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
-                              ),
+                              Text('Besoin d\'aide ?', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                               SizedBox(height: 4),
-                              Text(
-                                'Ecoutez les instructions pour vous connecter',
-                              ),
+                              Text('Écoutez les instructions pour vous connecter'),
                             ],
                           ),
                         ),
@@ -246,21 +260,17 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
               ),
-              SizedBox(height: 32),
-
+              const SizedBox(height: 32),
             ],
           ),
         ),
       ),
-        
       bottomNavigationBar: SafeArea(
         child: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: AppColors.tertiaryBg,
-            border: Border(
-              top: BorderSide(color: Colors.grey.shade300, width: 1),
-            ),
+            border: Border(top: BorderSide(color: Colors.grey.shade300, width: 1)),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -268,45 +278,31 @@ class _LoginScreenState extends State<LoginScreen> {
               Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    Icons.record_voice_over,
-                    color: AppColors.black,
-                  ),
+                  Icon(Icons.record_voice_over, color: AppColors.black),
                   Opacity(
                     opacity: 0.8,
-                    child: Text(
-                      'Aide audio',
-                      style: TextStyle(
-                        color: AppColors.black,
-                      ),
-                    ),
+                    child: Text('Aide audio', style: TextStyle(color: AppColors.black)),
                   ),
                 ],
               ),
               ElevatedButton(
-                onPressed: () {},
+                onPressed: () {
+                  if (Navigator.canPop(context)) {
+                    Navigator.pop(context);
+                  } else {
+                    Navigator.pushReplacementNamed(context, AppRoutes.onboarding);
+                  }
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFFF8E31),
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 10,
-                    horizontal: 22,
-                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 22),
                   shape: const StadiumBorder(),
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(
-                      Icons.arrow_back,
-                      size: 20,
-                      color: AppColors.black,
-                    ),
-                    Text(
-                      'Retour',
-                      style: TextStyle(
-                        color: AppColors.black,
-                      ),
-                    ),
+                    Icon(Icons.arrow_back, size: 20, color: AppColors.black),
+                    Text('Retour', style: TextStyle(color: AppColors.black)),
                   ],
                 ),
               ),

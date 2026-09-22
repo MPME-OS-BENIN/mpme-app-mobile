@@ -1,8 +1,27 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:mpme_app_mobile/core/theme/app_colors.dart';
 import 'package:flutter/gestures.dart';
-//import 'package:url_launcher/url_launcher.dart';
+import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
+import 'package:mpme_app_mobile/core/theme/app_colors.dart';
+import 'package:mpme_app_mobile/core/widgets/app_password_field.dart';
+import 'package:mpme_app_mobile/core/widgets/app_phone_field.dart';
+import 'package:mpme_app_mobile/core/widgets/error_banner.dart';
+import 'package:mpme_app_mobile/data/providers/auth_provider.dart';
+import 'package:mpme_app_mobile/presentation/navigation/app_routes.dart';
+
+/// Secteurs d'activité proposés à l'inscription. Liste fermée pour éviter
+/// les saisies libres non exploitables par les analyses sectorielles à
+/// venir (US15). À faire valider / compléter côté produit si besoin.
+const List<String> kSecteursActivite = [
+  'Commerce',
+  'Agriculture',
+  'Artisanat',
+  'Restauration',
+  'Services',
+  'Transport',
+  'Textile & Couture',
+  'Autre',
+];
 
 class Inscription extends StatefulWidget {
   const Inscription({super.key});
@@ -13,6 +32,45 @@ class Inscription extends StatefulWidget {
 
 class _Inscription extends State<Inscription> {
   final _formKey = GlobalKey<FormState>();
+  final _nomController = TextEditingController();
+  final _prenomController = TextEditingController();
+  final _telephoneController = TextEditingController();
+  final _motDePasseController = TextEditingController();
+  final _villeController = TextEditingController();
+  String? _secteur;
+
+  @override
+  void dispose() {
+    _nomController.dispose();
+    _prenomController.dispose();
+    _telephoneController.dispose();
+    _motDePasseController.dispose();
+    _villeController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _creerCompte() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    final auth = context.read<AuthProvider>();
+    final succes = await auth.register(
+      telephone: telephoneComplet(_telephoneController.text),
+      password: _motDePasseController.text,
+      secteurActivitePrincipal: _secteur ?? '',
+      villeResidence: _villeController.text.trim(),
+    );
+
+    if (!mounted) return;
+    if (succes) {
+      Navigator.pushReplacementNamed(context, AppRoutes.dashboard);
+    }
+  }
+
+  String? _requis(String? value, String message) {
+    if (value == null || value.trim().isEmpty) return message;
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -21,10 +79,7 @@ class _Inscription extends State<Inscription> {
         backgroundColor: AppColors.tertiaryBg,
         title: Text(
           'MPME OS',
-          style: TextStyle(
-            color: AppColors.primaryAlt,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(color: AppColors.primaryAlt, fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
         leading: Padding(
@@ -38,7 +93,6 @@ class _Inscription extends State<Inscription> {
           ),
         ],
       ),
-
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
@@ -52,315 +106,135 @@ class _Inscription extends State<Inscription> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Chip(
-                        label: Opacity(
+                        label: const Opacity(
                           opacity: 0.8,
-                          child: Text(
-                            'Etape 1 sur 2',
-                            style: TextStyle(fontWeight: FontWeight.bold),
-                          ),
+                          child: Text('Profil Entrepreneur', style: TextStyle(fontWeight: FontWeight.bold)),
                         ),
-                        backgroundColor: Color(0xFF8DF8B7),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-
-                      Opacity(
-                        opacity: 0.8,
-                        child: Text(
-                          'Profile Entrepreneur',
-                          style: TextStyle(fontSize: 16),
-                        ),
+                        backgroundColor: const Color(0xFF8DF8B7),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                     ],
                   ),
                 ),
-
-                SizedBox(height: 20),
-
-                /*Container(
-              padding: EdgeInsets.symmetric(vertical: 30, horizontal: 50),
-              width: 1000,
-              height: 5,
-              decoration: BoxDecoration(
-                color: Colors.green,
-                borderRadius: BorderRadius.circular(10)
-              ),
-        
-                          
-              
-        
-              
-            )*/
-                Row(
-                  children: [
-                    Expanded(
-                      child: Container(
-                        margin: EdgeInsets.all(0.0),
-                        height: 4,
-                        decoration: BoxDecoration(color: Colors.green),
-                      ),
-                    ),
-                    Expanded(
-                      child: Container(
-                        margin: EdgeInsets.all(0.0),
-                        height: 4,
-                        decoration: BoxDecoration(color: Colors.grey),
-                      ),
-                    ),
-                  ],
-                ),
-
-                SizedBox(height: 20),
+                const SizedBox(height: 20),
                 Container(
                   height: 260,
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(8),
-                    //color: Colors.green,
-                    image: DecorationImage(
-                      image: AssetImage('assets/img/illustration.png'),
+                    image: const DecorationImage(
+                      image: AssetImage('assets/img/Illustration.png'),
                       fit: BoxFit.cover,
                     ),
                   ),
                 ),
-                SizedBox(height: 25),
+                const SizedBox(height: 25),
                 Text(
                   'Inscription',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 22,
-                    color: AppColors.black,
-                  ),
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 22, color: AppColors.black),
                 ),
-
-                SizedBox(height: 15),
-                Opacity(
+                const SizedBox(height: 15),
+                const Opacity(
                   opacity: 0.8,
                   child: Text(
-                    'Remplissez ces informations pour \ncommencer a gerer votre activite \n professionelle en tout simplicite',
+                    'Remplissez ces informations pour\ncommencer à gérer votre activité\nprofessionnelle en toute simplicité.',
                   ),
                 ),
-
-                SizedBox(height: 20),
+                const SizedBox(height: 20),
                 Form(
                   key: _formKey,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Nom de famille',
-                        style: TextStyle(
-                          color: AppColors.black,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                        ),
-                      ),
-                      SizedBox(height: 15),
+                      Text('Nom de famille',
+                          style: TextStyle(color: AppColors.black, fontWeight: FontWeight.bold, fontSize: 12)),
+                      const SizedBox(height: 15),
                       TextFormField(
+                        controller: _nomController,
                         keyboardType: TextInputType.text,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.allow(
-                            RegExp(r"[a-zA-ZÀ-ÿ\s'-]"),
-                          ),
-                        ],
-                        decoration: InputDecoration(
-                          hintText: "Ex: KOUANDETE",
-                          filled: true,
-                          fillColor: Colors.white,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.all(Radius.circular(8)),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.all(Radius.circular(8)),
-                            borderSide: BorderSide(
-                              color: Color(0xFFBDCABE),
-                              width: 2.0,
-                            ),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.all(Radius.circular(8)),
-                            borderSide: BorderSide(
-                              color: Color(0xFFBDCABE),
-                              width: 2.0,
-                            ),
-                          ),
-                        ),
+                        inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r"[a-zA-ZÀ-ÿ\s'-]"))],
+                        validator: (v) => _requis(v, 'Entrez votre nom de famille'),
+                        decoration: _decoration('Ex: Kouandété'),
                       ),
-                      SizedBox(height: 15,),
-
-                      Text('Prenom(s)',
-                      style: TextStyle(
-                          color: AppColors.black,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                        ),),
-
-                      SizedBox(height: 15,),
-
+                      const SizedBox(height: 15),
+                      Text('Prénom(s)',
+                          style: TextStyle(color: AppColors.black, fontWeight: FontWeight.bold, fontSize: 12)),
+                      const SizedBox(height: 15),
                       TextFormField(
+                        controller: _prenomController,
                         keyboardType: TextInputType.text,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.allow(
-                            RegExp(r"[a-zA-ZÀ-ÿ\s'-]"),
-                          ),
-                        ],
-                        decoration: InputDecoration(
-                          hintText: "Ex: Jean-Baptiste",
-                          filled: true,
-                          fillColor: Colors.white,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.all(Radius.circular(8)),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.all(Radius.circular(8)),
-                            borderSide: BorderSide(
-                              color: Color(0xFFBDCABE),
-                              width: 2.0,
-                            ),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.all(Radius.circular(8)),
-                            borderSide: BorderSide(
-                              color: Color(0xFFBDCABE),
-                              width: 2.0,
-                            ),
-                          ),
-                        ),
+                        inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r"[a-zA-ZÀ-ÿ\s'-]"))],
+                        validator: (v) => _requis(v, 'Entrez votre/vos prénom(s)'),
+                        decoration: _decoration('Ex: Jean-Baptiste'),
                       ),
-
-                      SizedBox(height: 15,),
-
-                      Text('Secteur d\'activite',
-                      style: TextStyle(
-                          color: AppColors.black,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                        ),),
-
-                      SizedBox(height: 15,),
-
-                      TextFormField(
-                        keyboardType: TextInputType.text,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.allow(
-                            RegExp(r"[a-zA-ZÀ-ÿ\s'-]"),
-                          ),
-                        ],
-                        decoration: InputDecoration(
-                          hintText: "Choisissez votre secteur",
-                          filled: true,
-                          fillColor: Colors.white,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.all(Radius.circular(8)),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.all(Radius.circular(8)),
-                            borderSide: BorderSide(
-                              color: Color(0xFFBDCABE),
-                              width: 2.0,
-                            ),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.all(Radius.circular(8)),
-                            borderSide: BorderSide(
-                              color: Color(0xFFBDCABE),
-                              width: 2.0,
-                            ),
-                          ),
-                        ),
+                      const SizedBox(height: 15),
+                      Text('Numéro de téléphone',
+                          style: TextStyle(color: AppColors.black, fontWeight: FontWeight.bold, fontSize: 12)),
+                      const SizedBox(height: 15),
+                      AppPhoneField(controller: _telephoneController),
+                      const SizedBox(height: 15),
+                      AppPasswordField(
+                        controller: _motDePasseController,
+                        hintText: 'Au moins 8 caractères',
+                        validator: (v) {
+                          if (v == null || v.isEmpty) return 'Choisissez un mot de passe';
+                          if (v.length < 8) return 'Au moins 8 caractères';
+                          return null;
+                        },
                       ),
-
-                      SizedBox(height: 15,),
-
+                      const SizedBox(height: 15),
+                      Text("Secteur d'activité",
+                          style: TextStyle(color: AppColors.black, fontWeight: FontWeight.bold, fontSize: 12)),
+                      const SizedBox(height: 15),
+                      DropdownButtonFormField<String>(
+                        initialValue: _secteur,
+                        validator: (v) => v == null ? 'Choisissez votre secteur' : null,
+                        decoration: _decoration('Choisissez votre secteur'),
+                        items: kSecteursActivite
+                            .map((s) => DropdownMenuItem(value: s, child: Text(s)))
+                            .toList(),
+                        onChanged: (v) => setState(() => _secteur = v),
+                      ),
+                      const SizedBox(height: 15),
                       Text('Ville de résidence',
-                      style: TextStyle(
-                          color: AppColors.black,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 12,
-                        ),),
-
-                      SizedBox(height: 15,),
-
+                          style: TextStyle(color: AppColors.black, fontWeight: FontWeight.bold, fontSize: 12)),
+                      const SizedBox(height: 15),
                       TextFormField(
+                        controller: _villeController,
                         keyboardType: TextInputType.text,
-                        inputFormatters: [
-                          FilteringTextInputFormatter.allow(
-                            RegExp(r"[a-zA-ZÀ-ÿ\s'-]"),
-                          ),
-                        ],
-                        decoration: InputDecoration(
-                          hintText: "Ex: Cotonou",
-                          filled: true,
-                          fillColor: Colors.white,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.all(Radius.circular(8)),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.all(Radius.circular(8)),
-                            borderSide: BorderSide(
-                              color: Color(0xFFBDCABE),
-                              width: 2.0,
-                            ),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.all(Radius.circular(8)),
-                            borderSide: BorderSide(
-                              color: Color(0xFFBDCABE),
-                              width: 2.0,
-                            ),
-                          ),
-                        ),
+                        inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r"[a-zA-ZÀ-ÿ\s'-]"))],
+                        validator: (v) => _requis(v, 'Entrez votre ville de résidence'),
+                        decoration: _decoration('Ex: Cotonou'),
                       ),
-
-                      
                     ],
                   ),
                 ),
-
-                SizedBox(height: 20),
-
-
-               // Padding(
-                //padding: const EdgeInsets.symmetric(horizontal: 18),
-               // child: 
+                const SizedBox(height: 20),
                 ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 420),
                   child: Container(
                     width: double.infinity,
                     decoration: BoxDecoration(
-                      color: Color(0xFFFFDDC6),
-                      border: Border.all(color: Color(0xFFFF8E31), width: 1),
+                      color: const Color(0xFFFFDDC6),
+                      border: Border.all(color: const Color(0xFFFF8E31), width: 1),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    padding: EdgeInsets.all(12),
+                    padding: const EdgeInsets.all(12),
                     child: Row(
                       children: [
                         CircleAvatar(
                           radius: 25,
-                          backgroundColor: Color(0xFF954A00),
-                          child: Icon(
-                            Icons.record_voice_over,
-                            color: AppColors.white,
-                            size: 20,
-                          ),
+                          backgroundColor: const Color(0xFF954A00),
+                          child: Icon(Icons.record_voice_over, color: AppColors.white, size: 20),
                         ),
-                        SizedBox(width: 12),
-                        Expanded(
+                        const SizedBox(width: 12),
+                        const Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Text(
-                                'Besoin d\'aide ?',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
-                              ),
+                              Text("Besoin d'aide ?", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                               SizedBox(height: 4),
-                              Text(
-                                'Ecoutez les instructions pour vous connecter',
-                              ),
+                              Text('Écoutez les instructions pour remplir ce formulaire.'),
                             ],
                           ),
                         ),
@@ -368,82 +242,94 @@ class _Inscription extends State<Inscription> {
                     ),
                   ),
                 ),
-              //),
-
-              SizedBox(height: 20),
-
-              SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () {},
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primaryAlt,
-                          minimumSize: Size(double.infinity, 56),
-                          padding: EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(23),
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                          'Créer mon compte',
-                          style: TextStyle(
-                            color: AppColors.white,
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                            SizedBox(width: 8),
-                            Icon(
-                              Icons.arrow_forward,
-                              color: AppColors.white,
+                const SizedBox(height: 20),
+                Consumer<AuthProvider>(
+                  builder: (context, auth, _) {
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: auth.isLoading ? null : _creerCompte,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primaryAlt,
+                              minimumSize: const Size(double.infinity, 56),
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(23)),
                             ),
-                          ],
-                        )
-                      ),
-                    ),
-                    SizedBox(height: 20),
-
-                    Opacity(
-                      opacity: 0.6,
-                      child: Center(
-                        child: Text.rich(TextSpan(
-                          text:"En créant un compte, vous acceptez  ",
-                          style: TextStyle(fontSize: 12, color: AppColors.black),
-                          children:[
-                            TextSpan(
-                              text:"nos conditions d'utilisation",
-                              style: TextStyle(color: AppColors.primaryAlt, fontWeight: FontWeight.bold,
+                            child: auth.isLoading
+                                ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                                  )
+                                : Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        'Créer mon compte',
+                                        style: TextStyle(color: AppColors.white, fontSize: 14, fontWeight: FontWeight.bold),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Icon(Icons.arrow_forward, color: AppColors.white),
+                                    ],
+                                  ),
+                          ),
+                        ),
+                        if (auth.erreur != null) ErrorBanner(message: auth.erreur!),
+                      ],
+                    );
+                  },
+                ),
+                const SizedBox(height: 20),
+                Opacity(
+                  opacity: 0.6,
+                  child: Center(
+                    child: Text.rich(
+                      TextSpan(
+                        text: 'En créant un compte, vous acceptez ',
+                        style: TextStyle(fontSize: 12, color: AppColors.black),
+                        children: [
+                          TextSpan(
+                            text: "nos conditions d'utilisation",
+                            style: TextStyle(
+                              color: AppColors.primaryAlt,
+                              fontWeight: FontWeight.bold,
                               decoration: TextDecoration.underline,
-                              ),
-                              recognizer:TapGestureRecognizer()..onTap=(){
+                            ),
+                            recognizer: TapGestureRecognizer()
+                              ..onTap = () {
                                 debugPrint("Conditions d'utilisation");
-                              }
-                              
-                            )
-                          ]
-                        ),
-                        ),
+                              },
+                          ),
+                        ],
                       ),
                     ),
-                    SizedBox(height: 20),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Center(
+                  child: TextButton(
+                    onPressed: () => Navigator.pushReplacementNamed(context, AppRoutes.login),
+                    child: Text(
+                      'Déjà un compte ? Se connecter',
+                      style: TextStyle(color: AppColors.primaryAlt, fontWeight: FontWeight.bold),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
               ],
             ),
           ),
         ),
       ),
-
-
       bottomNavigationBar: SafeArea(
         child: Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
             color: AppColors.tertiaryBg,
-            border: Border(
-              top: BorderSide(color: Colors.grey.shade300, width: 1),
-            ),
+            border: Border(top: BorderSide(color: Colors.grey.shade300, width: 1)),
           ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -451,51 +337,54 @@ class _Inscription extends State<Inscription> {
               Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    Icons.record_voice_over,
-                    color: AppColors.black,
-                  ),
+                  Icon(Icons.record_voice_over, color: AppColors.black),
                   Opacity(
                     opacity: 0.8,
-                    child: Text(
-                      'Aide audio',
-                      style: TextStyle(
-                        color: AppColors.black,
-                      ),
-                    ),
+                    child: Text('Aide audio', style: TextStyle(color: AppColors.black)),
                   ),
                 ],
               ),
               ElevatedButton(
-                onPressed: () {},
+                onPressed: () {
+                  if (Navigator.canPop(context)) {
+                    Navigator.pop(context);
+                  } else {
+                    Navigator.pushReplacementNamed(context, AppRoutes.onboarding);
+                  }
+                },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFFFF8E31),
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 10,
-                    horizontal: 22,
-                  ),
+                  padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 22),
                   shape: const StadiumBorder(),
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(
-                      Icons.arrow_back,
-                      size: 20,
-                      color: AppColors.black,
-                    ),
-                    Text(
-                      'Retour',
-                      style: TextStyle(
-                        color: AppColors.black,
-                      ),
-                    ),
+                    Icon(Icons.arrow_back, size: 20, color: AppColors.black),
+                    Text('Retour', style: TextStyle(color: AppColors.black)),
                   ],
                 ),
               ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  InputDecoration _decoration(String hint) {
+    return InputDecoration(
+      hintText: hint,
+      filled: true,
+      fillColor: Colors.white,
+      border: const OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(8))),
+      enabledBorder: const OutlineInputBorder(
+        borderRadius: BorderRadius.all(Radius.circular(8)),
+        borderSide: BorderSide(color: Color(0xFFBDCABE), width: 2.0),
+      ),
+      focusedBorder: const OutlineInputBorder(
+        borderRadius: BorderRadius.all(Radius.circular(8)),
+        borderSide: BorderSide(color: Color(0xFFBDCABE), width: 2.0),
       ),
     );
   }

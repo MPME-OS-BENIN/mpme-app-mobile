@@ -1,14 +1,19 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:mpme_app_mobile/main.dart';
 
 void main() {
-  testWidgets('MpmeApp démarre et affiche l\'écran d\'accueil', (WidgetTester tester) async {
-    await tester.pumpWidget(const MpmeApp());
-    await tester.pumpAndSettle();
+  testWidgets(
+    "MpmeApp démarre sur l'écran d'accueil (Onboarding) quand aucune session n'est stockée",
+    (WidgetTester tester) async {
+      await tester.pumpWidget(const MpmeApp());
+      // AuthGate affiche un indicateur de chargement pendant la tentative
+      // de restauration de session, puis redirige vers Onboarding faute
+      // de token stocké dans cet environnement de test.
+      await tester.pumpAndSettle();
 
-    expect(find.text('MPME OS - Test navigation'), findsOneWidget);
-    expect(find.text('Comptabilité'), findsOneWidget);
-  });
+      expect(find.text('MPME OS'), findsOneWidget);
+      expect(find.text('Commencer'), findsOneWidget);
+    },
+  );
 }
