@@ -2,9 +2,10 @@ import 'package:flutter/material.dart';
 import '../theme/app_colors.dart';
 import '../../presentation/navigation/app_routes.dart';
 
-enum AppTab { accueil, compta, score, profil }
+enum AppTab { accueil, compta, financement, score, profil }
 
-/// Bottom nav mobile reproduisant la maquette (Accueil / Compta / Score / Profil).
+/// Bottom nav mobile à 5 onglets (Accueil / Compta / Financement / Score /
+/// Profil), conforme à la maquette (écrans Financement/Formalisation).
 /// Navigue via Navigator.pushReplacementNamed pour rester en navigation
 /// classique (pas de TabBar/IndexedStack), conformément au choix retenu.
 class AppBottomNav extends StatelessWidget {
@@ -15,6 +16,7 @@ class AppBottomNav extends StatelessWidget {
   Widget build(BuildContext context) {
     final index = AppTab.values.indexOf(current);
     return BottomNavigationBar(
+      type: BottomNavigationBarType.fixed,
       currentIndex: index,
       onTap: (i) => _onTap(context, AppTab.values[i]),
       selectedItemColor: AppColors.primary,
@@ -22,6 +24,7 @@ class AppBottomNav extends StatelessWidget {
       items: const [
         BottomNavigationBarItem(icon: Icon(Icons.home_rounded), label: 'Accueil'),
         BottomNavigationBarItem(icon: Icon(Icons.receipt_long_rounded), label: 'Compta'),
+        BottomNavigationBarItem(icon: Icon(Icons.account_balance_wallet_rounded), label: 'Financement'),
         BottomNavigationBarItem(icon: Icon(Icons.speed_rounded), label: 'Score'),
         BottomNavigationBarItem(icon: Icon(Icons.person_rounded), label: 'Profil'),
       ],
@@ -36,6 +39,9 @@ class AppBottomNav extends StatelessWidget {
         break;
       case AppTab.compta:
         Navigator.pushReplacementNamed(context, AppRoutes.livreDeCaisse);
+        break;
+      case AppTab.financement:
+        Navigator.pushReplacementNamed(context, AppRoutes.financement);
         break;
       case AppTab.score:
         Navigator.pushReplacementNamed(context, AppRoutes.score);

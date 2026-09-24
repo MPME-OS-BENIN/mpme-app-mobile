@@ -19,15 +19,20 @@ class AuthProvider extends ChangeNotifier {
 
   Future<bool> restaurerSession() async {
     try {
-      final token = await _tokenStorage.accessToken;
+      // Timeout défensif : sur certains appareils d'entrée de gamme (ou
+      // en environnement de test sans vrai Keychain/Keystore), le plugin
+      // de stockage sécurisé peut ne jamais répondre. Sans ce timeout,
+      // l'écran de démarrage (AuthGate) resterait bloqué indéfiniment sur
+      // son indicateur de chargement.
+      final token = await _tokenStorage.accessToken.timeout(const Duration(seconds: 3));
       if (token == null) return false;
       final data = await _client.get(ApiConfig.me);
       _profil = data as Map<String, dynamic>;
       notifyListeners();
       return true;
     } catch (_) {
-      // Stockage sécurisé indisponible ou token invalide/expiré : on
-      // retombe simplement sur le flux de connexion, jamais de crash.
+      // Stockage sécurisé indisponible/hors délai ou token invalide/expiré :
+      // on retombe simplement sur le flux de connexion, jamais de crash.
       return false;
     }
   }
@@ -50,6 +55,7 @@ class AuthProvider extends ChangeNotifier {
       _erreur = e.message;
       return false;
     } catch (e) {
+      debugPrint('AuthProvider.login erreur brute: $e'); // TEMP diagnostic
       _erreur = 'Impossible de contacter le serveur.';
       return false;
     } finally {
@@ -96,11 +102,34 @@ class AuthProvider extends ChangeNotifier {
       _erreur = e.message;
       return false;
     } catch (e) {
+      debugPrint('AuthProvider.register erreur brute: $e'); // TEMP diagnostic
       _erreur = 'Impossible de contacter le serveur.';
       return false;
     } finally {
       _isLoading = false;
       notifyListeners();
+    }
+  }
+
+  /// Change la langue préférée (US10). Écran Réglages minimal : le
+  /// périmètre complet de l'i18n (traduction de toutes les interfaces)
+  /// n'est pas dans ce module, seul le réglage de la préférence l'est.
+  Future<bool> changerLangue(String code) async {
+    try {
+      await _client.patch(ApiConfig.meLangue, body: {'langue': code});
+      if (_profil != null) {
+        _profil = {..._profil!, 'langue_preference': code};
+      }
+      notifyListeners();
+      return true;
+    } on ApiException catch (e) {
+      _erreur = e.message;
+      notifyListeners();
+      return false;
+    } catch (_) {
+      _erreur = 'Impossible de changer la langue. Vérifiez votre connexion.';
+      notifyListeners();
+      return false;
     }
   }
 

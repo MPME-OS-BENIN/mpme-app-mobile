@@ -86,7 +86,7 @@ class DatabaseService {
       'transactions',
       {
         'statutSynchronisation': StatutSync.synchronise,
-        if (hash != null) 'hashVerification': hash,
+        'hashVerification': ?hash,
       },
       where: 'id = ?',
       whereArgs: [id],

@@ -6,6 +6,7 @@ import '../screens/comptabilite/comptabilite_screen.dart';
 import '../screens/dashboard/dashboard_screen.dart';
 import '../screens/financement/financement_screen.dart';
 import '../screens/formalisation/formalisation_screen.dart';
+import '../screens/formalisation/reglages_screen.dart';
 import '../screens/score/score_screen.dart';
 import '../screens/transactions/livre_de_caisse_screen.dart';
 import '../screens/transactions/saisie_depense_screen.dart';
@@ -22,6 +23,7 @@ class AppRoutes {
   static const String livreDeCaisse = '/livre-de-caisse';
   static const String financement = '/financement';
   static const String formalisation = '/formalisation';
+  static const String reglages = '/reglages';
   static const String score = '/score';
 
   static Map<String, WidgetBuilder> routes = {
@@ -35,6 +37,7 @@ class AppRoutes {
     livreDeCaisse: (context) => const LivreDeCaisseScreen(),
     financement: (context) => const FinancementScreen(),
     formalisation: (context) => const FormalisationScreen(),
+    reglages: (context) => const ReglagesScreen(),
     score: (context) => const ScoreScreen(),
   };
 }

@@ -32,9 +32,9 @@ class TransactionApiService {
     String? typeTransaction,
   }) async {
     final query = <String, String>{
-      if (dateDebut != null) 'date_debut': dateDebut,
-      if (dateFin != null) 'date_fin': dateFin,
-      if (typeTransaction != null) 'type_transaction': typeTransaction,
+      'date_debut': ?dateDebut,
+      'date_fin': ?dateFin,
+      'type_transaction': ?typeTransaction,
     };
     final data = await _client.get(ApiConfig.transactions, query: query) as List<dynamic>;
     return data.map((e) => TransactionModel.fromApiJson(e as Map<String, dynamic>)).toList();
@@ -42,8 +42,8 @@ class TransactionApiService {
 
   Future<BeneficeResult> benefice({String? dateDebut, String? dateFin}) async {
     final query = <String, String>{
-      if (dateDebut != null) 'date_debut': dateDebut,
-      if (dateFin != null) 'date_fin': dateFin,
+      'date_debut': ?dateDebut,
+      'date_fin': ?dateFin,
     };
     final data = await _client.get(ApiConfig.transactionBenefice, query: query);
     return BeneficeResult.fromJson(data as Map<String, dynamic>);

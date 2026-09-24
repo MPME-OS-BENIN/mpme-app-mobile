@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 import '../models/transaction_model.dart';
 import '../repositories/transaction_repository.dart';
+import '../../core/network/api_client.dart';
 
 class TransactionProvider extends ChangeNotifier {
   final TransactionRepository _repository = TransactionRepository();
@@ -31,9 +32,12 @@ class TransactionProvider extends ChangeNotifier {
     return liste;
   }
 
+  bool _horsLigne = false;
+
   bool get isLoading => _isLoading;
   bool get isSubmitting => _isSubmitting;
   String? get erreur => _erreur;
+  bool get estHorsLigne => _horsLigne;
   String? get filtreType => _filtreType;
 
   double get totalVentes => _transactions.where((t) => t.estVente).fold(0.0, (s, t) => s + t.montant);
@@ -49,11 +53,20 @@ class TransactionProvider extends ChangeNotifier {
   Future<void> charger({String? entrepriseId}) async {
     _isLoading = true;
     _erreur = null;
+    _horsLigne = false;
     notifyListeners();
     try {
       _transactions = await _repository.rafraichirDepuisServeur();
+    } on ApiException catch (e) {
+      // Le serveur a répondu, mais en erreur (ex: session expirée, 500) :
+      // un vrai message d'erreur, distinct du simple mode hors-ligne.
+      _erreur = e.message;
+      _transactions = await _repository.obtenirToutesLesTransactions();
     } catch (_) {
-      _erreur = 'Affichage des données locales (hors-ligne).';
+      // Pas de réponse du tout (pas de réseau, timeout, DNS...) : on
+      // retombe sur le cache local sans afficher de message d'erreur
+      // alarmant, juste l'indicateur "hors-ligne".
+      _horsLigne = true;
       _transactions = await _repository.obtenirToutesLesTransactions();
     } finally {
       _isLoading = false;

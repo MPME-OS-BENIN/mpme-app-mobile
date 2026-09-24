@@ -1,7 +1,6 @@
 import '../models/transaction_model.dart';
 import '../services/database_service.dart';
 import '../services/transaction_api_service.dart';
-import '../../core/network/api_client.dart';
 
 class TransactionRepository {
   final DatabaseService _databaseService = DatabaseService();
@@ -50,26 +49,23 @@ class TransactionRepository {
   }
 
   /// Rafraîchit le cache local depuis le serveur (source de vérité) et
-  /// retourne la liste à jour. En cas d'échec réseau, retourne le cache local.
+  /// retourne la liste à jour. Ne rattrape volontairement aucune exception :
+  /// c'est au TransactionProvider de distinguer une vraie erreur serveur
+  /// (ApiException) d'une simple absence de connexion, pour afficher le bon
+  /// état à l'écran (hors-ligne vs erreur).
   Future<List<TransactionModel>> rafraichirDepuisServeur({
     String? dateDebut,
     String? dateFin,
     String? typeTransaction,
   }) async {
-    try {
-      final distantes = await _api.lister(
-        dateDebut: dateDebut,
-        dateFin: dateFin,
-        typeTransaction: typeTransaction,
-      );
-      // On ne remplace pas les transactions locales encore en attente de sync
-      final enAttente = await _databaseService.getUnsyncedTransactions();
-      await _databaseService.replaceAll([...distantes, ...enAttente]);
-      return await _databaseService.getAllTransactions();
-    } on ApiException {
-      return await _databaseService.getAllTransactions();
-    } catch (_) {
-      return await _databaseService.getAllTransactions();
-    }
+    final distantes = await _api.lister(
+      dateDebut: dateDebut,
+      dateFin: dateFin,
+      typeTransaction: typeTransaction,
+    );
+    // On ne remplace pas les transactions locales encore en attente de sync
+    final enAttente = await _databaseService.getUnsyncedTransactions();
+    await _databaseService.replaceAll([...distantes, ...enAttente]);
+    return await _databaseService.getAllTransactions();
   }
 }

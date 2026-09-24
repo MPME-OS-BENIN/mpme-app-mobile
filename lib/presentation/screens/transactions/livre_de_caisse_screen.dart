@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_bottom_nav.dart';
+import '../../../core/widgets/error_banner.dart';
 import '../../../core/widgets/montant_fcfa.dart';
+import '../../../core/widgets/offline_banner.dart';
 import '../../../data/models/transaction_model.dart';
 import '../../../data/providers/transaction_provider.dart';
 import '../../navigation/app_routes.dart';
@@ -38,38 +40,49 @@ class _LivreDeCaisseScreenState extends State<LivreDeCaisseScreen> {
         label: const Text('Transaction'),
         onPressed: () => _ouvrirChoixTransaction(context),
       ),
-      body: RefreshIndicator(
-        onRefresh: () => provider.charger(),
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            const Text(
-              'Suivi chronologique de vos flux de trésorerie.',
-              style: TextStyle(color: AppColors.neutralGrey),
+      body: Column(
+        children: [
+          if (provider.estHorsLigne) const OfflineBanner(),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: () => provider.charger(),
+              child: ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  const Text(
+                    'Suivi chronologique de vos flux de trésorerie.',
+                    style: TextStyle(color: AppColors.neutralGrey),
+                  ),
+                  const SizedBox(height: 16),
+                  _ResumeCards(
+                    totalVentes: provider.totalVentes,
+                    totalDepenses: provider.totalDepenses,
+                    solde: provider.soldeDeCaisse,
+                  ),
+                  const SizedBox(height: 16),
+                  _FiltresRow(provider: provider),
+                  const SizedBox(height: 8),
+                  if (provider.erreur != null) ...[
+                    ErrorBanner(message: provider.erreur!),
+                    const SizedBox(height: 8),
+                  ],
+                  if (provider.isLoading)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 40),
+                      child: Center(child: CircularProgressIndicator()),
+                    )
+                  else if (transactions.isEmpty)
+                    const Padding(
+                      padding: EdgeInsets.symmetric(vertical: 40),
+                      child: Center(child: Text('Aucune transaction pour le moment.')),
+                    )
+                  else
+                    ...transactions.map((t) => _TransactionTile(transaction: t)),
+                ],
+              ),
             ),
-            const SizedBox(height: 16),
-            _ResumeCards(
-              totalVentes: provider.totalVentes,
-              totalDepenses: provider.totalDepenses,
-              solde: provider.soldeDeCaisse,
-            ),
-            const SizedBox(height: 16),
-            _FiltresRow(provider: provider),
-            const SizedBox(height: 8),
-            if (provider.isLoading)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 40),
-                child: Center(child: CircularProgressIndicator()),
-              )
-            else if (transactions.isEmpty)
-              const Padding(
-                padding: EdgeInsets.symmetric(vertical: 40),
-                child: Center(child: Text('Aucune transaction pour le moment.')),
-              )
-            else
-              ...transactions.map((t) => _TransactionTile(transaction: t)),
-          ],
-        ),
+          ),
+        ],
       ),
       bottomNavigationBar: const AppBottomNav(current: AppTab.compta),
     );

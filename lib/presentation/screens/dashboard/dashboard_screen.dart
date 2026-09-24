@@ -2,9 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../../core/widgets/app_bottom_nav.dart';
+import '../../../core/widgets/error_banner.dart';
 import '../../../core/widgets/montant_fcfa.dart';
-import '../../../data/providers/auth_provider.dart';
+import '../../../core/widgets/offline_banner.dart';
+import '../../../data/models/score_model.dart';
 import '../../../data/providers/entreprise_provider.dart';
+import '../../../data/providers/score_provider.dart';
 import '../../../data/providers/transaction_provider.dart';
 import '../../navigation/app_routes.dart';
 
@@ -26,12 +29,24 @@ class _DashboardScreenState extends State<DashboardScreen> {
     await context.read<EntrepriseProvider>().charger();
     if (!mounted) return;
     await context.read<TransactionProvider>().charger();
+    if (!mounted) return;
+    await context.read<ScoreProvider>().charger();
   }
 
   @override
   Widget build(BuildContext context) {
     final txProvider = context.watch<TransactionProvider>();
-    final auth = context.watch<AuthProvider>();
+    final entrepriseProvider = context.watch<EntrepriseProvider>();
+    final scoreProvider = context.watch<ScoreProvider>();
+
+    // Une seule source de vérité pour le bandeau hors-ligne : si l'un des
+    // trois chargements est retombé sur du cache local / est indisponible
+    // faute de connexion, on le signale une fois en haut de l'écran plutôt
+    // que de répéter le bandeau à chaque carte.
+    final horsLigne = entrepriseProvider.estHorsLigne || txProvider.estHorsLigne || scoreProvider.estHorsLigne;
+    // Une vraie erreur serveur (pas juste hors-ligne) sur l'un des chargements
+    // principaux : on l'affiche, sans bloquer le reste de l'écran.
+    final erreur = entrepriseProvider.erreur ?? txProvider.erreur;
 
     return Scaffold(
       appBar: AppBar(
@@ -58,75 +73,84 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: _charger,
-        child: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            _SoldeCard(solde: txProvider.soldeDeCaisse, isLoading: txProvider.isLoading),
-            const SizedBox(height: 16),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(child: _ScoreCard()),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _VentesFraisCard(
-                    ventes: txProvider.totalVentes,
-                    depenses: txProvider.totalDepenses,
+      body: Column(
+        children: [
+          if (horsLigne) const OfflineBanner(),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: _charger,
+              child: ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  _SoldeCard(solde: txProvider.soldeDeCaisse, isLoading: txProvider.isLoading),
+                  const SizedBox(height: 16),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(child: _ScoreCard(provider: scoreProvider)),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _VentesFraisCard(
+                          ventes: txProvider.totalVentes,
+                          depenses: txProvider.totalDepenses,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
-              ],
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _ActionCard(
+                          label: 'Vente',
+                          icon: Icons.shopping_cart_rounded,
+                          color: AppColors.primary,
+                          onTap: () => Navigator.pushNamed(context, AppRoutes.saisieVente),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _ActionCard(
+                          label: 'Dépense',
+                          icon: Icons.receipt_long_rounded,
+                          color: AppColors.brownTertiaryAlt,
+                          onTap: () => Navigator.pushNamed(context, AppRoutes.saisieDepense),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _ActionCard(
+                          label: 'Mon Score',
+                          icon: Icons.speed_rounded,
+                          color: AppColors.goldTertiary,
+                          onTap: () => Navigator.pushNamed(context, AppRoutes.score),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _ActionCard(
+                          label: 'Financement',
+                          icon: Icons.account_balance_wallet_rounded,
+                          color: AppColors.surfaceDarkContainer,
+                          onTap: () => Navigator.pushNamed(context, AppRoutes.financement),
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (erreur != null) ...[
+                    const SizedBox(height: 16),
+                    ErrorBanner(message: erreur),
+                  ],
+                  const SizedBox(height: 8),
+                ],
+              ),
             ),
-            const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: _ActionCard(
-                    label: 'Vente',
-                    icon: Icons.shopping_cart_rounded,
-                    color: AppColors.primary,
-                    onTap: () => Navigator.pushNamed(context, AppRoutes.saisieVente),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _ActionCard(
-                    label: 'Dépense',
-                    icon: Icons.receipt_long_rounded,
-                    color: AppColors.brownTertiaryAlt,
-                    onTap: () => Navigator.pushNamed(context, AppRoutes.saisieDepense),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: _ActionCard(
-                    label: 'Mon Score',
-                    icon: Icons.speed_rounded,
-                    color: AppColors.goldTertiary,
-                    onTap: () => Navigator.pushNamed(context, AppRoutes.score),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _ActionCard(
-                    label: 'Financement',
-                    icon: Icons.account_balance_wallet_rounded,
-                    color: AppColors.surfaceDarkContainer,
-                    onTap: () => Navigator.pushNamed(context, AppRoutes.financement),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24),
-            if (auth.erreur != null)
-              Text(auth.erreur!, style: const TextStyle(color: AppColors.error)),
-          ],
-        ),
+          ),
+        ],
       ),
       bottomNavigationBar: const AppBottomNav(current: AppTab.accueil),
     );
@@ -182,19 +206,18 @@ class _SoldeCard extends StatelessWidget {
                     fontWeight: FontWeight.bold,
                   ),
                 ),
-          const SizedBox(height: 4),
-          const Text(
-            '+12% par rapport à hier',
-            style: TextStyle(color: Colors.white70, fontSize: 13),
-          ),
         ],
       ),
     );
   }
 }
 
+/// Carte score réelle (US7/US13) : /100, jamais /1000 (correction produit).
+/// États gérés : chargement, erreur (message serveur), hors-ligne (le score
+/// est calculé côté serveur, pas de cache local possible), succès.
 class _ScoreCard extends StatelessWidget {
-  const _ScoreCard();
+  final ScoreProvider provider;
+  const _ScoreCard({required this.provider});
 
   @override
   Widget build(BuildContext context) {
@@ -205,19 +228,63 @@ class _ScoreCard extends StatelessWidget {
           children: [
             const Text('Votre Score', style: TextStyle(fontWeight: FontWeight.w600)),
             const SizedBox(height: 16),
-            SizedBox(
-              height: 56,
-              child: CustomPaint(
-                size: const Size(double.infinity, 56),
-                painter: _GaugePainter(progress: 0.72, color: AppColors.primary),
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text('720 /1000', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            _buildContenu(context),
           ],
         ),
       ),
     );
+  }
+
+  Widget _buildContenu(BuildContext context) {
+    if (provider.isLoading && provider.score == null) {
+      return const SizedBox(
+        height: 56,
+        child: Center(child: CircularProgressIndicator(strokeWidth: 2)),
+      );
+    }
+    if (provider.score == null) {
+      // Erreur ou hors-ligne : pas de valeur à afficher, message court
+      // plutôt qu'une jauge vide trompeuse.
+      final message = provider.estHorsLigne
+          ? 'Indisponible hors-ligne'
+          : 'Score indisponible';
+      return SizedBox(
+        height: 56,
+        child: Center(
+          child: Text(
+            message,
+            textAlign: TextAlign.center,
+            style: const TextStyle(color: AppColors.neutralGrey, fontSize: 12),
+          ),
+        ),
+      );
+    }
+
+    final score = provider.score!;
+    return Column(
+      children: [
+        SizedBox(
+          height: 56,
+          child: CustomPaint(
+            size: const Size(double.infinity, 56),
+            painter: _GaugePainter(progress: score.progression, color: _couleurRisque(score.niveauRisque)),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text('${score.valeur.round()} /100', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+      ],
+    );
+  }
+
+  Color _couleurRisque(String niveau) {
+    switch (niveau) {
+      case NiveauRisque.faible:
+        return AppColors.primary;
+      case NiveauRisque.eleve:
+        return AppColors.error;
+      default:
+        return AppColors.goldTertiary;
+    }
   }
 }
 
@@ -244,7 +311,8 @@ class _GaugePainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+  bool shouldRepaint(covariant _GaugePainter oldDelegate) =>
+      oldDelegate.progress != progress || oldDelegate.color != color;
 }
 
 class _VentesFraisCard extends StatelessWidget {

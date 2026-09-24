@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Autorise le trafic HTTP en clair (non-HTTPS) UNIQUEMENT en build debug,
+  et UNIQUEMENT vers les adresses locales utilisées pour joindre le backend
+  Django en développement (10.0.2.2 = hôte vu depuis l'émulateur Android,
+  localhost/127.0.0.1 = device physique avec adb reverse ou test local).
+  Depuis Android 9 (API 28), le cleartext HTTP est bloqué par défaut pour
+  toute app ciblant un SDK récent — c'est ce qui causait
+  "Impossible de contacter le serveur" alors que Django tournait bien et
+  que baseUrl était correct.
+  Ce fichier n'existe que dans src/debug/ : un build release (production)
+  reste soumis à la politique stricte par défaut (HTTPS obligatoire).
+-->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">10.0.2.2</domain>
+        <domain includeSubdomains="false">localhost</domain>
+        <domain includeSubdomains="false">127.0.0.1</domain>
+    </domain-config>
+</network-security-config>
